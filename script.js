@@ -170,8 +170,8 @@ function typeWriter() {
   const nameElement = document.getElementById("typing-name")
   const professionElement = document.getElementById("typing-profession")
 
-  const nameText = "John Doe"
-  const professionText = "Information Security & Pentesting Enthusiast"
+  const nameText = "Doan Duc"
+  const professionText = "Security Engineer"
 
   let nameIndex = 0
   let professionIndex = 0
