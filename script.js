@@ -18,30 +18,105 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })
 
-  // Music control functionality
+  // Music control functionality - UPDATED
   const musicToggle = document.getElementById("music-toggle")
   const backgroundMusic = document.getElementById("background-music")
   let isPlaying = false
+  let userInteracted = false
 
-  // Try to play music automatically (may be blocked by browser)
-  const playMusic = () => {
-    backgroundMusic
-      .play()
-      .then(() => {
-        isPlaying = true
-        musicToggle.querySelector("i").className = "fas fa-volume-up"
-      })
-      .catch(() => {
-        // Autoplay blocked, user needs to interact first
-        isPlaying = false
-        musicToggle.querySelector("i").className = "fas fa-volume-mute"
-      })
+  // Set up audio
+  backgroundMusic.muted = false
+  backgroundMusic.volume = 0.3
+
+  // Function to handle music play
+  const attemptAutoplay = async () => {
+    try {
+      await backgroundMusic.play()
+      isPlaying = true
+      musicToggle.querySelector("i").className = "fas fa-volume-up"
+      console.log("Music started successfully")
+    } catch (error) {
+      console.log("Autoplay prevented:", error)
+      isPlaying = false
+      musicToggle.querySelector("i").className = "fas fa-volume-mute"
+      showMusicNotification()
+    }
   }
 
-  // Attempt autoplay after a short delay
-  setTimeout(playMusic, 1000)
+  // Show notification for user to enable music
+  const showMusicNotification = () => {
+    const notification = document.createElement('div')
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      z-index: 1000;
+      font-size: 14px;
+    `
+    notification.innerHTML = 'Click the music icon to enable background music'
+    document.body.appendChild(notification)
+    
+    setTimeout(() => {
+      notification.remove()
+    }, 5000)
+  }
 
-  musicToggle.addEventListener("click", () => {
+  // Try immediate autoplay
+  attemptAutoplay()
+
+  // Handle first user interaction to enable autoplay
+  const enableAutoplay = () => {
+    if (!userInteracted) {
+      userInteracted = true
+      if (!isPlaying) {
+        attemptAutoplay()
+      }
+    }
+  }
+
+  // Listen for first user interaction (but don't remove listeners)
+  document.addEventListener('click', enableAutoplay)
+  document.addEventListener('keydown', enableAutoplay)
+
+  // NEW: Left click anywhere to pause/play music
+  document.addEventListener('click', (e) => {
+    // Skip if clicking on music toggle button or theme button
+    if (e.target.closest('#music-toggle') || 
+        e.target.closest('#theme-button') || 
+        e.target.closest('a') || 
+        e.target.closest('button')) {
+      return
+    }
+
+    // Toggle music on left click
+    if (e.button === 0 || e.button === undefined) { // Left click
+      const icon = musicToggle.querySelector("i")
+      
+      if (isPlaying) {
+        backgroundMusic.pause()
+        icon.className = "fas fa-volume-mute"
+        isPlaying = false
+        console.log("Music paused by click")
+      } else {
+        backgroundMusic.play().then(() => {
+          icon.className = "fas fa-volume-up"
+          isPlaying = true
+          console.log("Music resumed by click")
+        }).catch(error => {
+          console.log("Could not play audio:", error)
+        })
+      }
+    }
+  })
+
+  // Manual music toggle button
+  musicToggle.addEventListener("click", async (e) => {
+    e.stopPropagation() // Prevent triggering the document click handler
+    
     const icon = musicToggle.querySelector("i")
 
     if (isPlaying) {
@@ -49,15 +124,15 @@ document.addEventListener("DOMContentLoaded", () => {
       icon.className = "fas fa-volume-mute"
       isPlaying = false
     } else {
-      backgroundMusic
-        .play()
-        .then(() => {
-          icon.className = "fas fa-volume-up"
-          isPlaying = true
-        })
-        .catch(() => {
-          console.log("Could not play audio")
-        })
+      try {
+        backgroundMusic.muted = false
+        await backgroundMusic.play()
+        icon.className = "fas fa-volume-up"
+        isPlaying = true
+      } catch (error) {
+        console.log("Could not play audio:", error)
+        icon.className = "fas fa-volume-mute"
+      }
     }
   })
 
@@ -197,3 +272,4 @@ function typeWriter() {
   // Start typing after page loads
   setTimeout(typeName, 1000)
 }
+
